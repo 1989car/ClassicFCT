@@ -1,4 +1,19 @@
 local addonName, CFCT = ...
+local L = LibStub:GetLibrary("AceLocale-3.0"):GetLocale(addonName)
+
+-- Localized miss-type display text (misstype comes from COMBAT_LOG_EVENT_MISS)
+local MISS_TEXT = {
+    ABSORB = L["Absorb"],
+    BLOCK = L["Block"],
+    DEFLECT = L["Deflect"],
+    DODGE = L["Dodge"],
+    EVADE = L["Evade"],
+    IMMUNE = L["Immune"],
+    MISS = L["Miss"],
+    PARRY = L["Parry"],
+    REFLECT = L["Reflect"],
+    RESIST = L["Resist"],
+}
 _G[addonName] = CFCT
 local IsClassic = (WOW_PROJECT_ID == WOW_PROJECT_CLASSIC)
 local IsBCC = (WOW_PROJECT_ID == WOW_PROJECT_BURNING_CRUSADE_CLASSIC)
@@ -1143,7 +1158,7 @@ function f:MissEvent(guid, spellid, amount, periodic, misstype, pet, school)
     spellid = spellid or 6603 -- 6603 = Auto Attack
     local event = ((spellid == 75) or (spellid == 6603)) and "auto" or "spell" -- 75 = autoshot
     local spellicon = spellid and SpellIconText(spellid) or ""
-    CacheEvent(guid, event, 0, strlower(misstype):gsub("^%l", strupper), spellid or 6603, spellicon, periodic, false, true, pet, school)
+    CacheEvent(guid, event, 0, MISS_TEXT[misstype] or misstype, spellid or 6603, spellicon, periodic, false, true, pet, school)
 end
 function f:HealingEvent(guid, spellid, amount, periodic, crit, pet, school)
     local event = "heal"

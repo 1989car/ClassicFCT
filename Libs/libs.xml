@@ -2,4 +2,5 @@
 	<Script file="LibStub\LibStub.lua"/>
 	<Include file="CallbackHandler-1.0\CallbackHandler-1.0.xml"/>
 	<Include file="LibSharedMedia-3.0\lib.xml" />
+	<Include file="AceLocale-3.0\AceLocale-3.0.xml"/>
 </Ui>
