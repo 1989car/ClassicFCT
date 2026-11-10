@@ -8,6 +8,9 @@ local InCombatLockdown = InCombatLockdown
 local AbbreviateNumbers = AbbreviateNumbers
 local GetTime = GetTime
 local GetAddOnMetadata = GetAddOnMetadata or C_AddOns.GetAddOnMetadata
+local IsSecret = issecretvalue or function() return false end
+local CanAccess = canaccessvalue or function() return true end
+local restrictionActive = false
 
 local GetSpellInfo_old = GetSpellInfo
 local GetSpellInfo = (type(GetSpellInfo_old) == 'function') and function(id)
@@ -51,7 +54,7 @@ local ROLLING_AVERAGE_LENGTH = 10
 local rollingAverageTimer = 0
 local damageCache = {}
 local function AddToAverage(value)
-    if CFCT._testMode and not InCombatLockdown() then return end
+    if restrictionActive or (CFCT._testMode and not InCombatLockdown()) then return end
     tinsert(damageCache, {
         value = value,
         time = now
@@ -362,7 +365,7 @@ local function GridLayout(unsortedFrames)
                 local s1 = v.state
                 for i,e in ipairs(frames) do
                     local s2 = e.state
-                    if (not s2.miss and not s1.miss) and (s2.amount < s1.amount) then
+                    if (not s2.miss and not s1.miss) and not (s1.secret or s2.secret) and (s2.amount < s1.amount) then
                         tinsert(frames, i, v)
                         count = count + 1
                         break
@@ -653,11 +656,12 @@ local function DispatchText(guid, event, text, amount, spellid, spellicon, perio
     local cat = (pet and "pet" or "")..event..(periodic and "tick" or "")..(crit and "crit" or miss and "miss" or "")
     local fctConfig = CFCT.Config
     local catConfig = fctConfig[cat]
-    text = text or tostring(amount)
+    local secret = amount ~= nil and IsSecret(amount) or nil
+    text = text or (secret and amount or tostring(amount))
     -- TODO put fctConfig and catConfig into state
 
     count = count or 1
-    if (not miss) then
+    if (not miss) and not secret then
         if (not crit) then
             AddToAverage(amount / count)
         end
@@ -700,6 +704,7 @@ local function DispatchText(guid, event, text, amount, spellid, spellicon, perio
         icon = spellicon,
         text = text,
         amount = amount,
+        secret = secret,
         miss = miss,
         baseAlpha = 1,
         baseScale = 1,
@@ -755,6 +760,7 @@ local function CacheEvent(guid, event, amount, text, spellid, spellicon, periodi
         guid = guid,
         event = event,
         amount = amount,
+        secret = (amount ~= nil and IsSecret(amount)) or nil,
         text = text,
         spellid = spellid,
         spellicon = spellicon,
@@ -784,6 +790,8 @@ local function ProcessCachedEvents()
                 for _,e in ipairs(record.events) do
                     if e.miss and separateMisses then
                         DispatchText(e.guid, e.event, e.text, e.amount, e.spellid, e.spellicon, e.periodic, e.crit, e.miss, e.pet, e.school)
+                    elseif e.secret then
+                        DispatchText(e.guid, e.event, e.text, e.amount, e.spellid, e.spellicon, e.periodic, e.crit, e.miss, e.pet, e.school)
                     elseif not merge then
                         merge = e
                     else
@@ -803,7 +811,7 @@ local function ProcessCachedEvents()
             end
         else
             for _,e in ipairs(record.events) do
-                local text = (e.amount ~= 0) and e.amount or e.text
+                local text = e.secret and (e.text or e.amount) or ((e.amount ~= 0) and e.amount or e.text)
                 DispatchText(e.guid, e.event, e.text, e.amount, e.spellid, e.spellicon, e.periodic, e.crit, e.miss, e.pet, e.school)
             end
             eventCache[id] = nil
@@ -882,6 +890,7 @@ local events = {
     COMBAT_LOG_EVENT_UNFILTERED = true,
     UNIT_MAXHEALTH = true,
     ADDON_LOADED = true,
+    ADDON_RESTRICTION_STATE_CHANGED = true,
     PLAYER_LOGOUT = true,
     PLAYER_ENTERING_WORLD = true,
     NAME_PLATE_UNIT_ADDED = true,
@@ -984,6 +993,10 @@ function f:PLAYER_ENTERING_WORLD()
     playerGUID = UnitGUID("player")
 end
 
+function f:ADDON_RESTRICTION_STATE_CHANGED(restricted)
+    restrictionActive = restricted == true
+end
+
 local nameplates = {}
 function f:NAME_PLATE_UNIT_ADDED(unit)
     local guid = UnitGUID(unit)
@@ -1002,11 +1015,14 @@ end
 local unitHealthMax = {}
 function f:UNIT_MAXHEALTH(unit)
     if (unit == 'player') then
-        unitHealthMax[unit] = UnitHealthMax(unit)
+        local v = UnitHealthMax(unit)
+        if CanAccess(v) then unitHealthMax[unit] = v end
     end
 end
 function CFCT:UnitHealthMax(unit)
-    return unitHealthMax[unit] or UnitHealthMax(unit)
+    if unitHealthMax[unit] ~= nil then return unitHealthMax[unit] end
+    local v = UnitHealthMax(unit)
+    return CanAccess(v) and v or 0
 end
 
 
