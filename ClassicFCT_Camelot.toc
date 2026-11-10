@@ -1,0 +1,34 @@
+## Interface: 16001
+## Title: ClassicFCT (reload)
+## Notes: Classic Floating Combat Text (reload)
+
+## Category: Combat Text
+## Category-deDE: Kampftext
+## Category-esES: Texto de combate
+## Category-esMX: Texto de combate
+## Category-frFR: Texte de combat
+## Category-itIT: Testo di combattimento
+## Category-koKR: 전투 문자
+## Category-ptBR: Texto de combate
+## Category-ruRU: Текст боя
+## Category-zhCN: 战斗文字
+## Category-zhTW: 戰鬥文字
+
+## Author: Oishi (reload of ClassicFCT by tehypno)
+## Version: @project-version@
+## SavedVariables: ClassicFCTCustomPresets, ClassicFCTConfig, ClassicFCTVars, ClassicFCTTables
+## SavedVariablesPerCharacter: ClassicFCTCharConfig, ClassicFCTCharVars, ClassicFCTCharTables
+## OptionalDeps: LibStub, CallbackHandler-1.0, LibSharedMedia-3.0, AceLocale-3.0
+## X-Support: Forever
+
+Libs\libs.xml
+
+Localization\enUS.lua
+Localization\zhCN.lua
+
+presets.lua
+Presets\presets.xml
+
+config.lua
+
+main.lua
